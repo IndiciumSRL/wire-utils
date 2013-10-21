@@ -21,21 +21,39 @@ engine = create_engine("postgresql+psycopg2://postgres@127.0.0.1/wirephone")
 init_model(engine)
 
 contador = 0
-
+linea = 0
+dl = True
+info = []
 while True:
         while True:
-                print "Ingrese Interno"
-                interno = raw_input("> ")
-                try:
-                        exten = Session.query(SofiaUser).filter(SofiaUser.name == unicode(interno)).one()
-                except:
-                        print "\nInterno no existe en la base de datos."
-                        continue
-                password = exten.params.get('password')
-                if password is None:
-                        print '\nInterno no tiene clave asignada.'
-                        continue
-                password = password.val
+                while dl:
+                        linea += 1
+                        print "Ingrese Interno"
+                        interno = raw_input("> ")
+                        try:
+                                exten = Session.query(SofiaUser).filter(SofiaUser.name == unicode(interno)).one()
+                        except:
+                                print "\nInterno no existe en la base de datos."
+                                continue
+                        password = exten.params.get('password')
+                        if password is None:
+                                print '\nInterno no tiene clave asignada.'
+                                continue
+                        password = password.val
+
+                        info.append({['interno%s' % linea]  : interno , ['pass%s' % linea]: password})
+
+                        print "Desea configurar la segunda linea del dispositivo? [s/n]"
+                        doslineas = raw_input("> ")
+                        if doslineas not in ["s","S"]:
+                                dl = False
+
+                print "Desea DESACTIVAR la llamada en espera del dispositivo? [s/n]"
+                sinespera = raw_input("> ")
+                if sinespera not in ['s','S']:
+                        se = False
+                else:
+                        se = True
                 print "Ingrese los ultimos 6 digitos de la MAC: (en minusuculas y sin \":\" El sistema autocompletara con 0004f2. Ej a ingresar: bb22cc )"
                 MAC = raw_input("> ")
                 MAC = '0004f2%s' % MAC
@@ -48,10 +66,16 @@ while True:
                         contador+=1
                         #Crear archivos
                         #MAC.cfg
-                        macfile = open (path+MAC+".cfg", "w")
-                        macfile.write("<?xml version=\"1.0\" standalone=\"yes\"?>\n   <APPLICATION APP_FILE_PATH=\"sip.ld\" CONFIG_FILES=\"\" MISC_FILES=\"\" LOG_FILE_DIRECTORY=\"\" OVERRIDES_DIRECTORY=\"\" CONTACTS_DIRECTORY=\"\" LICENSE_DIRECTORY=\"\" USER_PROFILES_DIRECTORY=\"\" CALL_LISTS_DIRECTORY=\"\">\n   <APPLICATION_SPIP330 APP_FILE_PATH_SPIP330=\"2345-12200-001.sip.ld\" CONFIG_FILES_SPIP330=\"reg-basic-"+MAC+".cfg, sip-basic-"+MAC+".cfg, reg-advanced.cfg, sip-advanced.cfg, site.cfg\"/>\n   <APPLICATION_SPIP331 APP_FILE_PATH_SPIP331=\"2345-12365-001.sip.ld\" CONFIG_FILES_SPIP331=\"reg-basic-"+MAC+".cfg, sip-basic-"+MAC+".cfg, reg-advanced.cfg, sip-advanced.cfg, site.cfg\"/>\n</APPLICATION>")
-                        macfile.close()
-
+                        if doslineas != "s" and sinespera == "n":
+                                macfile = open (path+MAC+".cfg", "w")
+                                macfile.write("<?xml version=\"1.0\" standalone=\"yes\"?>\n   <APPLICATION APP_FILE_PATH=\"sip.ld\" CONFIG_FILES=\"\" MISC_FILES=\"\" LOG_FILE_DIRECTORY=\"\" OVERRIDES_DIRECTORY=\"\" CONTACTS_DIRECTORY=\"\" LICENSE_DIRECTORY=\"\" USER_PROFILES_DIRECTORY=\"\" CALL_LISTS_DIRECTORY=\"\">\n   <APPLICATION_SPIP330 APP_FILE_PATH_SPIP330=\"2345-12200-001.sip.ld\" CONFIG_FILES_SPIP330=\"reg-basic-"+MAC+".cfg, sip-basic-"+MAC+".cfg, reg-advanced.cfg, sip-advanced.cfg, site.cfg\"/>\n   <APPLICATION_SPIP331 APP_FILE_PATH_SPIP331=\"2345-12365-001.sip.ld\" CONFIG_FILES_SPIP331=\"reg-basic-"+MAC+".cfg, sip-basic-"+MAC+".cfg, reg-advanced.cfg, sip-advanced.cfg, site.cfg\"/>\n</APPLICATION>")
+                                macfile.close()
+                        elif doslineas == "s" and sinespera == "n":
+                                pass
+                        elif doslineas == "n" and sinespera == "s":
+                                pass
+                        else:
+                                pass
                         #REG-basic
                         regbasic = open (path+"reg-basic-"+MAC+".cfg","w")
                         regbasic.write("<?xml version=\"1.0\" standalone=\"yes\"?>\n<polycomConfig xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"polycomConfig.xsd\">\n  <call call.callsPerLineKey=\"24\">\n  </call>\n  <reg reg.1.address=\""+interno+"\" reg.1.displayName=\""+interno+"\" reg.1.auth.password=\""+password+"\" reg.1.auth.userId=\""+interno+"\" reg.1.label=\""+interno+"\" reg.1.outboundProxy.address=\""+ippbx+"\" reg.2.address=\"\" reg.2.auth.password=\"\" reg.2.auth.userId=\"\" reg.2.label=\"\" reg.2.outboundProxy.address=\"\">\n  </reg>\n</polycomConfig>")
